@@ -8,12 +8,14 @@
 <style>
   :root{
     --bg:#f5f5f2; --card:#ffffff; --text:#1d1d1b; --muted:#6b6b66; --line:#e4e3de;
+    --accent:#1d1d1b; --accent-text:#ffffff;
     --ok:#1f7a4d; --ok-bg:#e6f4ec; --warn:#9a6200; --warn-bg:#fdf3e1;
     --bad:#b3261e; --bad-bg:#fbe9e7; --info:#3a5a8c; --info-bg:#e9eef7;
   }
   @media (prefers-color-scheme: dark){
     :root{
       --bg:#141413; --card:#1e1e1c; --text:#f0efe9; --muted:#a3a29b; --line:#33322e;
+      --accent:#f0efe9; --accent-text:#141413;
       --ok:#5fd39a; --ok-bg:#16301f; --warn:#f0b65a; --warn-bg:#33270f;
       --bad:#ff8a80; --bad-bg:#3a1714; --info:#9bb7e8; --info-bg:#1a2333;
     }
@@ -23,8 +25,7 @@
     background:var(--bg);color:var(--text);
     font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:16px}
   main{width:100%;max-width:420px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;
-    padding:32px 24px;text-align:center}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:32px 24px;text-align:center}
   .badge{width:88px;height:88px;border-radius:50%;margin:0 auto 20px;
     display:flex;align-items:center;justify-content:center;background:var(--info-bg);color:var(--info)}
   .badge svg{width:44px;height:44px}
@@ -32,12 +33,27 @@
   p.msg{color:var(--muted);margin:0 0 20px}
   .serial{font:600 1.25rem/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em;
     padding:12px 16px;border-radius:12px;background:var(--bg);margin:0 0 20px;word-break:break-all}
-  dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;text-align:left;margin:0;
-    font-size:.9rem;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
-  dt{font-weight:600;color:var(--text)} dd{margin:0;text-align:right}
   .test{display:inline-block;margin-bottom:16px;padding:4px 10px;border-radius:999px;
     font-size:.8rem;font-weight:600;background:var(--warn-bg);color:var(--warn)}
-  footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:16px}
+  form{text-align:left;display:grid;gap:12px}
+  label{font-size:.85rem;font-weight:600}
+  input,textarea{width:100%;font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);
+    border-radius:10px;padding:12px 14px;margin-top:4px}
+  textarea{min-height:110px;resize:vertical}
+  input:focus,textarea:focus{outline:2px solid var(--info);outline-offset:1px}
+  button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:12px 16px;cursor:pointer}
+  .primary{background:var(--accent);color:var(--accent-text);width:100%}
+  .primary:disabled{opacity:.6;cursor:wait}
+  .err{color:var(--bad);font-size:.9rem;margin:0;min-height:1.2em}
+  .pending{font-size:.85rem;color:var(--warn);background:var(--warn-bg);border-radius:10px;padding:8px 12px;margin:0 0 16px}
+  .entry{border-top:1px solid var(--line);padding-top:20px;margin-top:4px}
+  .saved{display:flex;gap:10px;align-items:flex-start;text-align:left;background:var(--ok-bg);color:var(--ok);
+    border-radius:12px;padding:12px 14px;font-size:.9rem}
+  .saved q{display:block;color:var(--text);quotes:none;margin-top:4px;white-space:pre-wrap;word-break:break-word}
+  .count{font-size:.8rem;color:var(--muted);text-align:right;margin-top:-6px}
+  footer{display:flex;justify-content:space-between;align-items:center;gap:12px;
+    color:var(--muted);font-size:.8rem;margin-top:16px;padding:0 4px}
+  .link{background:none;padding:0;color:var(--muted);text-decoration:underline;font-weight:500;font-size:.8rem}
   .ok .badge{background:var(--ok-bg);color:var(--ok)} .ok h1{color:var(--ok)}
   .warn .badge{background:var(--warn-bg);color:var(--warn)}
   .bad .badge{background:var(--bad-bg);color:var(--bad)} .bad h1{color:var(--bad)}
@@ -47,19 +63,47 @@
 </head>
 <body>
 <main>
-  <div class="card" id="card">
+  <!-- Connexion -->
+  <div class="card" id="login" hidden>
+    <div class="badge" id="lockBadge"></div>
+    <h1>Connexion</h1>
+    <p class="msg">Connectez-vous pour vérifier une carte.</p>
+    <p class="pending" id="pendingNote" hidden>Une carte a été scannée : elle sera vérifiée après la connexion.</p>
+    <form id="loginForm" novalidate>
+      <label>Nom d'utilisateur<input id="username" autocomplete="username" autocapitalize="none" required></label>
+      <label>Mot de passe<input type="password" id="password" autocomplete="current-password" required></label>
+      <p class="err" id="loginErr"></p>
+      <button class="primary" id="loginBtn" type="submit">Se connecter</button>
+    </form>
+  </div>
+
+  <!-- Résultat -->
+  <div class="card" id="card" hidden>
     <span class="test" id="test" hidden>Mode test : clés d'usine</span>
     <div class="badge" id="badge"></div>
-    <h1 id="title">Vérification en cours…</h1>
-    <p class="msg" id="msg">Contrôle de la signature cryptographique de la carte.</p>
+    <h1 id="title"></h1>
+    <p class="msg" id="msg"></p>
     <div class="serial" id="serial" hidden></div>
-    <dl id="details" hidden>
-      <dt>Lecture n°</dt><dd id="counter">–</dd>
-      <dt>Vérifications réussies</dt><dd id="scans">–</dd>
-      <dt>Contrôlé le</dt><dd id="when">–</dd>
-    </dl>
+
+    <!-- Saisie (seulement si la carte est authentique) -->
+    <div class="entry" id="entry" hidden>
+      <form id="entryForm" novalidate>
+        <label>Texte<textarea id="text" maxlength="2000" placeholder="Saisissez votre texte…"></textarea></label>
+        <div class="count" id="count">0 / 2000</div>
+        <p class="err" id="entryErr"></p>
+        <button class="primary" id="validateBtn" type="submit">Validate</button>
+      </form>
+      <div class="saved" id="saved" hidden>
+        <span aria-hidden="true">✓</span>
+        <div><strong>Texte enregistré</strong> <span id="savedWhen"></span><q id="savedText"></q></div>
+      </div>
+    </div>
   </div>
-  <footer>Carte NFC sécurisée NTAG 424 DNA</footer>
+
+  <footer>
+    <span id="who">Carte NFC sécurisée NTAG 424 DNA</span>
+    <button class="link" id="logout" hidden>Se déconnecter</button>
+  </footer>
 </main>
 
 <script>
@@ -71,9 +115,9 @@
     ok:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
     warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>',
     bad:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
-    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>'
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+    lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>'
   };
-
   const VIEWS = {
     authentic:       ["ok",   "Carte authentique"],
     replay:          ["warn", "Lien déjà utilisé"],
@@ -87,53 +131,128 @@
 
   const $ = (id) => document.getElementById(id);
 
-  function show(kind, title, msg) {
-    $("card").className = "card " + kind;
-    $("badge").innerHTML = ICONS[kind] || ICONS.info;
-    $("title").textContent = title;
-    $("msg").textContent = msg;
+  // ---- petit stockage tolérant (navigation privée, stockage bloqué…)
+  const mem = {};
+  const st = (area) => ({
+    get(k){ try { return window[area].getItem(k); } catch { return mem[area + k] ?? null; } },
+    set(k, v){ try { window[area].setItem(k, v); } catch { mem[area + k] = v; } },
+    del(k){ try { window[area].removeItem(k); } catch {} delete mem[area + k]; }
+  });
+  const local = st("localStorage"), sess = st("sessionStorage");
+  // jeton de connexion : partagé entre onglets (chaque scan ouvre souvent un nouvel onglet)
+  const auth = {
+    get token(){ return local.get("nfc_token"); }, get user(){ return local.get("nfc_user"); },
+    save(t, u){ local.set("nfc_token", t); local.set("nfc_user", u); },
+    clear(){ local.del("nfc_token"); local.del("nfc_user"); }
+  };
+
+  let currentScanId = null;
+
+  async function api(method, query, body) {
+    const headers = {};
+    if (auth.token) headers["x-app-token"] = auth.token;
+    if (body) headers["Content-Type"] = "application/json";
+    try {
+      const r = await fetch(VERIFY_URL + (query ? "?" + query : ""), {
+        method, headers, cache: "no-store", body: body ? JSON.stringify(body) : undefined
+      });
+      return await r.json();
+    } catch {
+      return { status: "error", message: "Impossible de joindre le service." };
+    }
   }
 
-  async function run() {
-    const q = new URLSearchParams(location.search);
-    if (!q.get("cmac")) {
-      show("info", "Vérification de carte",
-           "Approchez une carte NFC de votre téléphone pour vérifier son authenticité.");
-      return;
-    }
-    show("load", "Vérification en cours…", "Contrôle de la signature cryptographique de la carte.");
-    $("badge").innerHTML = ICONS.load;
+  // ---- écrans
+  function showLogin(error) {
+    $("card").hidden = true; $("login").hidden = false;
+    $("lockBadge").innerHTML = ICONS.lock;
+    $("pendingNote").hidden = !sess.get("nfc_pending");
+    $("loginErr").textContent = error || "";
+    $("logout").hidden = true;
+    $("who").textContent = "Carte NFC sécurisée NTAG 424 DNA";
+    setTimeout(() => $("username").focus(), 50);
+  }
+  function showCard(kind, title, msg) {
+    $("login").hidden = true; $("card").hidden = false;
+    $("card").className = "card " + kind;
+    $("badge").innerHTML = kind === "load" ? ICONS.load : (ICONS[kind] || ICONS.info);
+    $("title").textContent = title; $("msg").textContent = msg;
+    $("serial").hidden = true; $("test").hidden = true; $("entry").hidden = true;
+    $("logout").hidden = false; $("who").textContent = "Connecté : " + (auth.user || "");
+  }
+  function expired() {
+    auth.clear();
+    showLogin("Votre session a expiré. Reconnectez-vous.");
+  }
 
-    // Retire les paramètres de la barre d'adresse : un rechargement ne réutilise pas le lien
-    history.replaceState(null, "", location.pathname);
-
-    let data;
-    try {
-      const r = await fetch(VERIFY_URL + "?" + q.toString(), { cache: "no-store" });
-      data = await r.json();
-    } catch (e) {
-      data = { status: "error", message: "Impossible de joindre le service de vérification." };
-    }
+  // ---- vérification
+  async function verify(query) {
+    showCard("load", "Vérification en cours…", "Contrôle de la signature cryptographique de la carte.");
+    const data = await api("GET", query);
+    if (data.status === "unauthorized") { sess.set("nfc_pending", query); return expired(); }
 
     const [kind, title] = VIEWS[data.status] || VIEWS.error;
-    show(kind, title, data.message || "");
+    showCard(kind, title, data.message || "");
     $("test").hidden = !data.test_mode;
-
-    const serial = data.serial || q.get("sn");
-    // n'affiche le n° de série que s'il est confirmé par le serveur (jamais pour une carte refusée)
-    if (serial && (kind === "ok" || kind === "warn") && data.serial) {
-      $("serial").textContent = serial;
-      $("serial").hidden = false;
+    if (data.serial && (kind === "ok" || kind === "warn")) {
+      $("serial").textContent = data.serial; $("serial").hidden = false;
     }
-    if (data.status === "authentic") {
-      $("counter").textContent = data.counter ?? "–";
-      $("scans").textContent = data.scans ?? "–";
-      $("when").textContent = new Date().toLocaleString("fr-CH");
-      $("details").hidden = false;
+    if (data.status === "authentic" && data.scan_id) {
+      currentScanId = data.scan_id;
+      $("entry").hidden = false; $("entryForm").hidden = false; $("saved").hidden = true;
+      $("text").value = ""; $("count").textContent = "0 / 2000"; $("entryErr").textContent = "";
+      setTimeout(() => $("text").focus(), 50);
     }
   }
 
-  run();
+  function proceed() {
+    const query = sess.get("nfc_pending");
+    sess.del("nfc_pending");
+    if (query) verify(query);
+    else showCard("info", "Prêt à vérifier", "Approchez une carte NFC du téléphone.");
+  }
+
+  // ---- connexion
+  $("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = $("username").value.trim(), password = $("password").value;
+    if (!username || !password) { $("loginErr").textContent = "Saisissez le nom d'utilisateur et le mot de passe."; return; }
+    $("loginBtn").disabled = true; $("loginErr").textContent = "";
+    const data = await api("POST", "", { action: "login", username, password });
+    $("loginBtn").disabled = false;
+    if (data.status !== "ok") { $("loginErr").textContent = data.message || "Connexion impossible."; return; }
+    $("password").value = "";
+    auth.save(data.token, data.username);
+    proceed();
+  });
+
+  // ---- saisie + Validate
+  $("text").addEventListener("input", () => { $("count").textContent = $("text").value.length + " / 2000"; $("entryErr").textContent = ""; });
+  $("entryForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = $("text").value;
+    if (!text.trim()) { $("entryErr").textContent = "Saisissez un texte avant de valider."; return; }
+    $("validateBtn").disabled = true; $("entryErr").textContent = "";
+    const data = await api("POST", "", { action: "save", scan_id: currentScanId, text });
+    $("validateBtn").disabled = false;
+    if (data.status === "unauthorized") return expired();
+    if (data.status !== "saved") { $("entryErr").textContent = data.message || "Erreur d'enregistrement."; return; }
+    $("entryForm").hidden = true; $("saved").hidden = false;
+    $("savedWhen").textContent = "· " + new Date().toLocaleString("fr-CH");
+    $("savedText").textContent = text.trim();
+  });
+
+  $("logout").addEventListener("click", () => { auth.clear(); sess.del("nfc_pending"); showLogin(); });
+
+  // ---- démarrage
+  (function start() {
+    const q = new URLSearchParams(location.search);
+    if (q.get("cmac")) {
+      sess.set("nfc_pending", q.toString());
+      history.replaceState(null, "", location.pathname); // un rechargement ne réutilise pas le lien
+    }
+    if (auth.token) proceed(); else showLogin();
+  })();
 </script>
 </body>
 </html>
